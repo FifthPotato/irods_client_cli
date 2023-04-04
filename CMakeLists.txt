@@ -2,16 +2,10 @@ cmake_minimum_required(VERSION 3.7.0 FATAL_ERROR)
 
 find_package(IRODS REQUIRED)
 
-
-
-get_cmake_property(_variableNames VARIABLES)
-list (SORT _variableNames)
-foreach (_variableName ${_variableNames})
-    message(STATUS "${_variableName}=${${_variableName}}")
-endforeach()
-
 set(IRODS_CLI_REVISION "0")
 set(IRODS_CLI_VERSION "${IRODS_VERSION}.${IRODS_CLI_REVISION}")
+set(irods_static_subcommands ls put)
+set(irods_dynamic_subcommands)
 
 set(CMAKE_C_COMPILER ${IRODS_EXTERNALS_FULLPATH_CLANG}/bin/clang)
 set(CMAKE_CXX_COMPILER ${IRODS_EXTERNALS_FULLPATH_CLANG}/bin/clang++)
@@ -70,22 +64,34 @@ target_include_directories(${APP} PRIVATE ${CMAKE_SOURCE_DIR}/include
                                           ${IRODS_EXTERNALS_FULLPATH_CLANG}/include/c++/v1
                                           ${IRODS_EXTERNALS_FULLPATH_FMT}/include)
 
+
+list(TRANSFORM irods_static_subcommands PREPEND irods_cli_ OUTPUT_VARIABLE static_liblist)
 target_link_libraries(${APP} PRIVATE irods_common
                                      irods_plugin_dependencies
-                                     irods_client
-                                     irods_cli_ls
-                                     irods_cli_put
+                                     ${static_liblist}
                                      ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_filesystem.so
                                      ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_system.so
                                      ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_program_options.so
                                      ${IRODS_EXTERNALS_FULLPATH_FMT}/lib/libfmt.so
                                      dl)
 
+list(JOIN irods_static_subcommands ")(" cli_boost_seq)
+set(cli_boost_seq "(${cli_boost_seq})")
+target_compile_definitions(${APP} PRIVATE CLI_SEQ=${cli_boost_seq})
+
 # CLI Commands
+set(do_static TRUE)
+foreach(cmd ${irods_static_subcommands})
+    add_subdirectory(commands/${cmd})
+    target_compile_definitions(irods_cli_${cmd} PRIVATE DO_STATIC)
+endforeach()
+set(do_static)
+foreach(cmd ${irods_dynamic_subcommands})
+    add_subdirectory(commands/${cmd})
+endforeach()
+
 #add_subdirectory(commands/cp)
 #add_subdirectory(commands/get)
-add_subdirectory(commands/ls)
-add_subdirectory(commands/put)
 #add_subdirectory(commands/repl)
 #add_subdirectory(commands/rm)
 #add_subdirectory(commands/touch)

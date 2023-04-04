@@ -135,6 +135,10 @@ namespace irods::cli
 } // namespace irods::cli
 
 // TODO Need to investigate whether this is truely required.
+#ifdef DO_STATIC 
 extern "C" BOOST_SYMBOL_EXPORT irods::cli::CLI_COMMAND_NAME BOOST_PP_CAT(cli_impl_, CLI_COMMAND_NAME);
 irods::cli::CLI_COMMAND_NAME BOOST_PP_CAT(cli_impl_, CLI_COMMAND_NAME);
+#else
+irods::cli::CLI_COMMAND_NAME cli_impl;
+#endif
 #undef CLI_COMMAND_NAME
