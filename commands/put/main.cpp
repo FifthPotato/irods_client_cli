@@ -12,6 +12,8 @@
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/preprocessor/cat.hpp>
+#include <boost/preprocessor/stringize.hpp>
 
 #include <iostream>
 #include <string>
@@ -25,6 +27,8 @@
 #include <mutex>
 #include <atomic>
 #include <algorithm>
+
+#define CLI_COMMAND_NAME put
 
 // clang-format off
 namespace fs   = boost::filesystem;
@@ -49,7 +53,7 @@ namespace irods::cli
     public:
         auto name() const noexcept -> std::string_view override
         {
-            return "put";
+            return BOOST_PP_STRINGIZE(CLI_COMMAND_NAME); 
         }
 
         auto description() const noexcept -> std::string_view override
@@ -339,5 +343,6 @@ namespace irods::cli
 
 // TODO Need to investigate whether this is truely required.
 //extern "C" BOOST_SYMBOL_EXPORT irods::cli::put cli_impl;
-irods::cli::put cli_impl;
-
+extern "C" BOOST_SYMBOL_EXPORT irods::cli::CLI_COMMAND_NAME BOOST_PP_CAT(cli_impl_, CLI_COMMAND_NAME);
+irods::cli::CLI_COMMAND_NAME BOOST_PP_CAT(cli_impl_, CLI_COMMAND_NAME);
+#undef CLI_COMMAND_NAME

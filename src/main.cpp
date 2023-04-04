@@ -1,4 +1,5 @@
 #include "command.hpp"
+#include "include_generator.hpp"
 
 #include <irods/rodsClient.h>
 #include <irods/irods_default_paths.hpp>
@@ -14,6 +15,7 @@
 #include <string>
 #include <unordered_map>
 
+
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 
@@ -22,6 +24,7 @@ using cli_command_map_type = std::unordered_map<std::string_view, boost::shared_
 auto is_shared_library(const fs::path& p) -> bool;
 
 auto load_cli_command_plugins(const po::variables_map& vm) -> cli_command_map_type;
+auto load_self_cli_command_plugins() -> cli_command_map_type; 
 
 auto print_version_info() noexcept -> void;
 auto print_usage_info(const cli_command_map_type& cli) -> void;
@@ -58,7 +61,9 @@ int main(int argc, char* argv[])
 
         load_client_api_plugins();
 
-        auto cli = load_cli_command_plugins(vm);
+        auto cli = load_self_cli_command_plugins();
+        auto plugin = load_cli_command_plugins(vm);
+        cli.merge(plugin);
 
         if (const auto show_help_text = vm.count("help") > 0; vm.count("command")) {
             const auto command = vm["command"].as<std::string>();
@@ -95,7 +100,19 @@ auto is_shared_library(const fs::path& p) -> bool
     // TODO
     return true;
 }
-
+auto load_self_cli_command_plugins() -> cli_command_map_type 
+{
+    cli_command_map_type map;
+    namespace dll = boost::dll;
+    dll::library_info inf(dll::program_location());
+    dll::shared_library lib(dll::program_location());
+    std::vector<std::string> exports = inf.symbols("irodscli");
+    for (auto const& command : exports) {
+        auto cli_impl = dll::import_alias<irods::cli::command>(lib, command);
+        map.insert_or_assign(cli_impl->name(), cli_impl);
+    }
+    return map;
+}
 auto load_cli_command_plugins(const po::variables_map& vm) -> cli_command_map_type
 {
     cli_command_map_type map;
@@ -121,7 +138,7 @@ auto load_cli_command_plugins(const po::variables_map& vm) -> cli_command_map_ty
     for (auto&& e : fs::directory_iterator{lib_dir}) {
         if (is_shared_library(e)) {
             namespace dll = boost::dll;
-            auto cli_impl = dll::import<irods::cli::command>(e.path(), "cli_impl", dll::load_mode::append_decorations);
+            auto cli_impl = dll::import_symbol<irods::cli::command>(e.path(), "cli_impl", dll::load_mode::append_decorations);
             map.insert_or_assign(cli_impl->name(), cli_impl);
         }
     }

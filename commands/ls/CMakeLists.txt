@@ -2,7 +2,7 @@ project(irods_cli_ls)
 
 set(CLI_MODULE_NAME irods_cli_ls)
 
-add_library(${CLI_MODULE_NAME} MODULE ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
+add_library(${CLI_MODULE_NAME} STATIC ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 
 set_target_properties(${CLI_MODULE_NAME} PROPERTIES CXX_STANDARD ${IRODS_CXX_STANDARD}
                                                     VERSION      0.0.1

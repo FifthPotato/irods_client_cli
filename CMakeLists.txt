@@ -1,6 +1,15 @@
 cmake_minimum_required(VERSION 3.7.0 FATAL_ERROR)
 
 find_package(IRODS REQUIRED)
+
+
+
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+foreach (_variableName ${_variableNames})
+    message(STATUS "${_variableName}=${${_variableName}}")
+endforeach()
+
 set(IRODS_CLI_REVISION "0")
 set(IRODS_CLI_VERSION "${IRODS_VERSION}.${IRODS_CLI_REVISION}")
 
@@ -11,6 +20,7 @@ project(irods_cli
   VERSION "${IRODS_CLI_VERSION}"
   LANGUAGES CXX)
 
+set(CMAKE_VERBOSE_MAKEFILE ON)
 set(IRODS_CLI_COMMANDS_INSTALL_DIR ${IRODS_PLUGINS_DIRECTORY}/cli)
 
 include(${IRODS_TARGETS_PATH})
@@ -22,6 +32,10 @@ if (NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
     message(STATUS "Setting unspecified CMAKE_BUILD_TYPE to '${CMAKE_BUILD_TYPE}'")
 endif()
 
+find_package(nlohmann_json "3.6.1" REQUIRED)
+find_package(Threads REQUIRED)
+find_package(OpenSSL REQUIRED COMPONENTS Crypto SSL)
+
 if (NOT IRODS_EXTERNALS_PACKAGE_ROOT)
     set(IRODS_EXTERNALS_PACKAGE_ROOT "/opt/irods-externals" CACHE STRING "Choose the location of iRODS external packages." FORCE)
     message(STATUS "Setting unspecified IRODS_EXTERNALS_PACKAGE_ROOT to '${IRODS_EXTERNALS_PACKAGE_ROOT}'")
@@ -29,8 +43,8 @@ endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 set(CMAKE_INSTALL_RPATH ${IRODS_EXTERNALS_FULLPATH_CLANG_RUNTIME}/lib)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 set(CMAKE_EXE_LINKER_FLAGS_INIT "${CMAKE_MODULE_LINKER_FLAGS} -stdlib=libc++")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -stdlib=libc++ -Wl,--export-dynamic -pthread")
@@ -49,6 +63,7 @@ target_compile_options(${APP} PRIVATE -Wno-write-strings -nostdinc++)
 
 target_compile_definitions(${APP} PRIVATE IRODS_CLI_VERSION="${IRODS_CLI_VERSION}" ${IRODS_COMPILE_DEFINITIONS})
 
+
 target_include_directories(${APP} PRIVATE ${CMAKE_SOURCE_DIR}/include
                                           ${IRODS_INCLUDE_DIRS}
                                           ${IRODS_EXTERNALS_FULLPATH_BOOST}/include
@@ -58,6 +73,8 @@ target_include_directories(${APP} PRIVATE ${CMAKE_SOURCE_DIR}/include
 target_link_libraries(${APP} PRIVATE irods_common
                                      irods_plugin_dependencies
                                      irods_client
+                                     irods_cli_ls
+                                     irods_cli_put
                                      ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_filesystem.so
                                      ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_system.so
                                      ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_program_options.so
@@ -65,13 +82,13 @@ target_link_libraries(${APP} PRIVATE irods_common
                                      dl)
 
 # CLI Commands
-add_subdirectory(commands/cp)
-add_subdirectory(commands/get)
+#add_subdirectory(commands/cp)
+#add_subdirectory(commands/get)
 add_subdirectory(commands/ls)
 add_subdirectory(commands/put)
-add_subdirectory(commands/repl)
-add_subdirectory(commands/rm)
-add_subdirectory(commands/touch)
+#add_subdirectory(commands/repl)
+#add_subdirectory(commands/rm)
+#add_subdirectory(commands/touch)
 
 # Installation
 install(TARGETS ${APP}

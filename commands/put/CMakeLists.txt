@@ -2,7 +2,7 @@ project(irods_cli_put)
 
 set(CLI_MODULE_NAME irods_cli_put)
 
-add_library(${CLI_MODULE_NAME} MODULE ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
+add_library(${CLI_MODULE_NAME} STATIC ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 
 set_target_properties(${CLI_MODULE_NAME} PROPERTIES CXX_STANDARD ${IRODS_CXX_STANDARD}
                                                     VERSION      0.0.1
@@ -16,14 +16,16 @@ target_include_directories(${CLI_MODULE_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/includ
                                                       ${IRODS_INCLUDE_DIRS}
                                                       ${IRODS_EXTERNALS_FULLPATH_CLANG}/include/c++/v1
                                                       ${IRODS_EXTERNALS_FULLPATH_JSON}/include
-                                                      ${IRODS_EXTERNALS_FULLPATH_BOOST}/include)
+                                                      ${IRODS_EXTERNALS_FULLPATH_BOOST}/include
+                                                      ${IRODS_EXTERNALS_FULLPATH_FMT}/include)
 
 target_link_libraries(${CLI_MODULE_NAME} PRIVATE irods_common
                                                  irods_plugin_dependencies
                                                  irods_client
                                                  ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_filesystem.so
                                                  ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_system.so
-                                                 ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_program_options.so)
+                                                 ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_program_options.so
+                                                 ${IRODS_EXTERNALS_FULLPATH_FMT}/lib/libfmt.so)
 
 # Installation
 install(TARGETS ${CLI_MODULE_NAME}
