@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.7.0 FATAL_ERROR)
 
 find_package(IRODS REQUIRED)
 
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+
 set(IRODS_CLI_REVISION "0")
 set(IRODS_CLI_VERSION "${IRODS_VERSION}.${IRODS_CLI_REVISION}")
 set(irods_static_subcommands ls put)
