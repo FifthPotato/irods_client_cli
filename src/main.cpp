@@ -35,6 +35,7 @@ int main(int argc, char* argv[])
     options.add_options()
         ("help,h", "")
         ("version,v", "")
+        ("verbose", "")
         ("plugin-home,p", po::value<std::string>(), "")
         ("command", po::value<std::string>(), "")
         ("arguments", po::value<std::vector<std::string>>(), "");
@@ -88,7 +89,7 @@ int main(int argc, char* argv[])
         }
     }
     catch (const std::exception& e) {
-        fmt::print("ERROR: {}\n", e.what());
+        fmt::print(stderr, "ERROR: {}\n", e.what());
         return 1;
     }
 
@@ -134,15 +135,24 @@ auto load_cli_command_plugins(const po::variables_map& vm) -> cli_command_map_ty
 
         lib_dir /= "cli";
     }
-
-    for (auto&& e : fs::directory_iterator{lib_dir}) {
-        if (is_shared_library(e)) {
-            namespace dll = boost::dll;
-            auto cli_impl = dll::import_symbol<irods::cli::command>(e.path(), "cli_impl", dll::load_mode::append_decorations);
-            map.insert_or_assign(cli_impl->name(), cli_impl);
+    if(vm.count("verbose")) {
+        fmt::print("Loading dynamic cli plugins from {}...\n", lib_dir.string());
+    }
+    try {
+        for (auto&& e : fs::directory_iterator{lib_dir}) {
+            if (is_shared_library(e)) {
+                namespace dll = boost::dll;
+                auto cli_impl = dll::import_symbol<irods::cli::command>(e.path(), "cli_impl", dll::load_mode::append_decorations);
+                map.insert_or_assign(cli_impl->name(), cli_impl);
+            }
         }
     }
-
+    catch(const fs::filesystem_error& ex) {
+        if(vm.count("verbose")) {
+            fmt::print(stderr, "Failure while loading dynamic cli plugins for reason:\n\n{}\n\nThis is OK, but no dynamic cli plugins will be loaded!\n", ex.what());
+        }
+        map.clear();
+    }
     return map;
 }
 
