@@ -13,11 +13,11 @@
 
 #include <fmt/format.h>
 
-#include <iostream>
 #include <string>
 #include <chrono>
 #include <vector>
 #include <iomanip>
+#include <iostream>
 #include <ctime>
 #include <sstream>
 #include <functional>
@@ -85,7 +85,6 @@ namespace irods::cli
 
             auto const printfunc = vm.count("L") ? std::bind(&CLI_COMMAND_NAME::print_multi_line_description, this, std::placeholders::_1, std::placeholders::_2)
                                                  : std::bind(&CLI_COMMAND_NAME::print_one_liner_description, this, std::placeholders::_1, std::placeholders::_2);
-
             if(vm.count("r")) {
                 for(auto&& e : fs::client::recursive_collection_iterator{conn,logical_path}) {
                     std::invoke(printfunc, conn, e);
@@ -106,14 +105,23 @@ namespace irods::cli
             auto tm = std::chrono::system_clock::to_time_t(e.last_write_time());
             std::stringstream ss;
             ss << std::put_time(std::localtime(&tm), "%F %T");
+            if(e.is_data_object()) {
+                fmt::print("{:<10} {} {:<10} {:>15} {} & {}\n",
+                           e.owner(),
+                           0,
+                           "demoResc",
+                           fs::client::data_object_size(conn, e),
+                           ss.str(),
+                           e.path().object_name().c_str());
+            } else {
+                fmt::print("{:<10} {} {:<10} {} & {}\n",
+                           e.owner(),
+                           0,
+                           "demoResc",
+                           ss.str(),
+                           e.path().object_name().c_str());
 
-            fmt::print("{:<10} {} {:<10} {:>15} {} & {}\n",
-                       e.owner(),
-                       0,
-                       "demoResc",
-                       fs::client::data_object_size(conn, e),
-                       ss.str(),
-                       e.path().object_name().c_str());
+            }
         }
 
         auto print_multi_line_description(rcComm_t& conn, const fs::client::collection_entry& e) -> void
@@ -121,20 +129,28 @@ namespace irods::cli
             auto tm = std::chrono::system_clock::to_time_t(e.last_write_time());
             std::stringstream ss;
             ss << std::put_time(std::localtime(&tm), "%F %T");
-            fmt::print("MULTILINE TODO");
-            fmt::print("{:<10} {} {:<10} {:>15} {} & {}\n",
-                       e.owner(),
-                       0,
-                       "demoResc",
-                       fs::client::data_object_size(conn, e),
-                       ss.str(),
-                       e.path().object_name().c_str());
+             if(e.is_data_object()) {
+                fmt::print("{:<10} {} {:<10} {:>15} {} & {}\n",
+                           e.owner(),
+                           0,
+                           "demoResc",
+                           fs::client::data_object_size(conn, e),
+                           ss.str(),
+                           e.path().object_name().c_str());
+            } else {
+                fmt::print("{:<10} {} {:<10} {} & {}\n",
+                           e.owner(),
+                           0,
+                           "demoResc",
+                           ss.str(),
+                           e.path().object_name().c_str());
+
+            }
 
         }
     }; // class ls
 } // namespace irods::cli
 
-// TODO Need to investigate whether this is truely required.
 #ifdef DO_STATIC 
 extern "C" BOOST_SYMBOL_EXPORT irods::cli::CLI_COMMAND_NAME BOOST_PP_CAT(cli_impl_, CLI_COMMAND_NAME);
 irods::cli::CLI_COMMAND_NAME BOOST_PP_CAT(cli_impl_, CLI_COMMAND_NAME);

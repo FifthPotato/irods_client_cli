@@ -14,6 +14,8 @@
 #include <iostream>
 #include <string>
 
+#define CLI_COMMAND_NAME repl
+
 namespace fs = irods::experimental::filesystem;
 namespace po = boost::program_options;
 namespace ia = irods::experimental::api;
@@ -31,7 +33,7 @@ namespace {
 
 namespace irods::cli
 {
-    void print_progress(const std::string& p)
+    inline void print_progress(const std::string& p)
     {
         static boost::progress_display prog{100};
         try {
@@ -44,12 +46,12 @@ namespace irods::cli
         }
     } // print_progress
 
-    class cp : public command
+    class CLI_COMMAND_NAME : public command
     {
     public:
         auto name() const noexcept -> std::string_view override
         {
-            return "repl";
+            return BOOST_PP_STRINGIZE(CLI_COMMAND_NAME);
         }
 
         auto description() const noexcept -> std::string_view override
@@ -205,7 +207,11 @@ irods repl [options] --source_resource <originating replica location> fully_qual
 
 } // namespace irods::cli
 
-// TODO Need to investigate whether this is truely required.
-extern "C" BOOST_SYMBOL_EXPORT irods::cli::cp cli_impl;
-irods::cli::cp cli_impl;
-
+#ifdef DO_STATIC 
+extern "C" BOOST_SYMBOL_EXPORT irods::cli::CLI_COMMAND_NAME BOOST_PP_CAT(cli_impl_, CLI_COMMAND_NAME);
+irods::cli::CLI_COMMAND_NAME BOOST_PP_CAT(cli_impl_, CLI_COMMAND_NAME);
+#else
+extern "C" BOOST_SYMBOL_EXPORT irods::cli::CLI_COMMAND_NAME cli_impl;
+irods::cli::CLI_COMMAND_NAME cli_impl;
+#endif
+#undef CLI_COMMAND_NAME

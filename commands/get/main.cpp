@@ -14,6 +14,8 @@
 #include <array>
 #include <vector>
 
+#define CLI_COMMAND_NAME get
+
 namespace fs = irods::experimental::filesystem::client;
 namespace io = irods::experimental::io;
 
@@ -21,12 +23,12 @@ namespace po = boost::program_options;
 
 namespace irods::cli
 {
-    class get : public command
+    class CLI_COMMAND_NAME: public command
     {
     public:
         auto name() const noexcept -> std::string_view override
         {
-            return "get";
+            return BOOST_PP_STRINGIZE(CLI_COMMAND_NAME);
         }
 
         auto description() const noexcept -> std::string_view override
@@ -104,7 +106,11 @@ namespace irods::cli
     }; // class get
 } // namespace irods::cli
 
-// TODO Need to investigate whether this is truely required.
-//extern "C" BOOST_SYMBOL_EXPORT irods::cli::get cli_impl;
-irods::cli::get cli_impl;
-
+#ifdef DO_STATIC 
+extern "C" BOOST_SYMBOL_EXPORT irods::cli::CLI_COMMAND_NAME BOOST_PP_CAT(cli_impl_, CLI_COMMAND_NAME);
+irods::cli::CLI_COMMAND_NAME BOOST_PP_CAT(cli_impl_, CLI_COMMAND_NAME);
+#else
+extern "C" BOOST_SYMBOL_EXPORT irods::cli::CLI_COMMAND_NAME cli_impl;
+irods::cli::CLI_COMMAND_NAME cli_impl;
+#endif
+#undef CLI_COMMAND_NAME
