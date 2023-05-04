@@ -48,6 +48,21 @@ namespace
 
 namespace irods::cli
 {
+    inline auto canonical(const std::string_view _path, const rodsEnv& _env) -> std::optional<std::string>
+    {
+        rodsPath_t input{};
+        rstrcpy(input.inPath, _path.data(), MAX_NAME_LEN);
+
+        if (parseRodsPath(&input, const_cast<rodsEnv*>(&_env)) != 0) {
+            return std::nullopt;
+        }
+
+        auto* escaped_path = escape_path(input.outPath);
+        std::optional<std::string> p = escaped_path;
+        std::free(escaped_path);
+
+        return p;
+    }
     class put : public command
     {
     public:
@@ -78,7 +93,7 @@ namespace irods::cli
             po::options_description options{""};
             options.add_options()
                 ("physical_path", po::value<std::string>(), "")
-                ("logical_path", po::value<std::string>()->default_value(env.rodsHome), "")
+                ("logical_path", po::value<std::string>()->default_value(env.rodsCwd), "")
                 ("connection_pool_size,c", po::value<int>()->default_value(4), "");
 
             po::positional_options_description positional_options;
@@ -88,6 +103,16 @@ namespace irods::cli
             po::variables_map vm;
             po::store(po::command_line_parser(args).options(options).positional(positional_options).run(), vm);
             po::notify(vm);
+            std::string logical_path;
+            if(vm.count("logical_path")) {
+                const auto path = canonical(vm["logical_path"].as<std::string>(), env);
+                if(!path.has_value()) {
+                    logical_path = env.rodsCwd; 
+                }
+                else {
+                    logical_path = path.value();
+                }
+            }
 
             if (vm.count("physical_path") == 0) {
                 std::cerr << "Error: Missing physical path.\n";
@@ -95,8 +120,8 @@ namespace irods::cli
             }
 
             return ("-" == vm["physical_path"].as<std::string>())
-                ? put_from_stdin(env, vm["logical_path"].as<std::string>())
-                : put_from_physical_path(env, vm);
+                ? put_from_stdin(env, logical_path)
+                : put_from_physical_path(env, vm["physical_path"].as<std::string>(), logical_path, vm["connection_pool_size"].as<int>());
         }
 
     private:
@@ -140,17 +165,15 @@ namespace irods::cli
             return 0;
         }
 
-        auto put_from_physical_path(const rodsEnv& _env, const po::variables_map& _vm) -> int
+        auto put_from_physical_path(const rodsEnv& _env, const std::string& _from, const ifs::path& to, const int pool_size) -> int
         {
+            const auto from = fs::canonical(_from);
             try {
-                const auto from = fs::canonical(_vm["physical_path"].as<std::string>());
-                const ifs::path to = _vm["logical_path"].as<std::string>();
 
                 if (fs::is_regular_file(from)) {
                     put_file(_env, from, to / from.filename().string());
                 }
                 else if (fs::is_directory(from)) {
-                    const auto pool_size = _vm["connection_pool_size"].as<int>();
                     irods::connection_pool conn_pool{pool_size, _env.rodsHost, _env.rodsPort, _env.rodsUserName, _env.rodsZone, 600};
                     irods::thread_pool thread_pool{static_cast<int>(std::thread::hardware_concurrency())};
                     put_directory(conn_pool, thread_pool, from, to / std::rbegin(from)->string());

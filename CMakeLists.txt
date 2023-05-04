@@ -6,7 +6,7 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
 set(IRODS_CLI_REVISION "0")
 set(IRODS_CLI_VERSION "${IRODS_VERSION}.${IRODS_CLI_REVISION}")
-set(irods_static_subcommands ls put get repl touch cp rm pwd)
+set(irods_static_subcommands ls put get repl touch cp rm pwd cd)
 set(irods_dynamic_subcommands)
 
 set(CMAKE_C_COMPILER ${IRODS_EXTERNALS_FULLPATH_CLANG}/bin/clang)

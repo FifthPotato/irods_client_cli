@@ -29,6 +29,21 @@ namespace po = boost::program_options;
 
 namespace irods::cli
 {
+    inline auto canonical(const std::string_view _path, const rodsEnv& _env) -> std::optional<std::string>
+    {
+        rodsPath_t input{};
+        rstrcpy(input.inPath, _path.data(), MAX_NAME_LEN);
+
+        if (parseRodsPath(&input, const_cast<rodsEnv*>(&_env)) != 0) {
+            return std::nullopt;
+        }
+
+        auto* escaped_path = escape_path(input.outPath);
+        std::optional<std::string> p = escaped_path;
+        std::free(escaped_path);
+
+        return p;
+    }
     class CLI_COMMAND_NAME: public command
     {
     public:
@@ -72,8 +87,18 @@ namespace irods::cli
                 std::cerr << "Error: Could not get iRODS environment.\n";
                 return 1;
             }
-
-            const auto logical_path = vm.count("logical_path") ? vm["logical_path"].as<std::string>() : env.rodsCwd;
+            std::string logical_path;
+            if(vm.count("logical_path")) {
+                const auto path = canonical(vm["logical_path"].as<std::string>(), env);
+                if(!path.has_value()) {
+                    std::cerr << "Invalid logical path.\n";
+                    return 1;
+                }
+                logical_path = path.value();
+            }
+            else {
+                logical_path = env.rodsCwd;
+            }
             auto conn_pool = irods::make_connection_pool();
             auto conn = conn_pool->get_connection();
 
