@@ -4,17 +4,17 @@
 
 
 // default values, should be overridden by cmake
-#ifndef CLI_SEQ
-#   define CLI_SEQ (ls)(put)
+#ifndef IRODS_CLI_SEQ
+#   define IRODS_CLI_SEQ (ls)(put)
 #endif
 
-#define STATIC_CLI(r,d,t) \
+#define IRODS_STATIC_CLI(r,d,t) \
   namespace irods::cli { \
   class t; \
   } \
   extern irods::cli::t BOOST_PP_CAT(cli_impl_, t); \
   BOOST_DLL_ALIAS_SECTIONED(BOOST_PP_CAT(cli_impl_, t), BOOST_PP_CAT(irods_cli_, t), irodscli);
 
-BOOST_PP_SEQ_FOR_EACH(STATIC_CLI, ~, CLI_SEQ);
+BOOST_PP_SEQ_FOR_EACH(IRODS_STATIC_CLI, ~, IRODS_CLI_SEQ);
 
-#undef STATIC_CLI
+#undef IRODS_STATIC_CLI

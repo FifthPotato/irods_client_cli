@@ -3,6 +3,7 @@
 #include <irods/rodsClient.h>
 #include <irods/connection_pool.hpp>
 #include <irods/filesystem.hpp>
+#include <irods/irods_query.hpp>
 
 #include <boost/config.hpp>
 #include <boost/dll/alias.hpp>
@@ -29,6 +30,25 @@ namespace po = boost::program_options;
 
 namespace irods::cli
 {
+    auto getAclString(rcComm_t& conn, const fs::client::collection_entry& ce) -> std::string 
+    {
+        std::stringstream ss, os;
+        os << "        ACL - ";
+        auto _path = ce.path();
+        if(ce.is_data_object()) {
+            ss << "SELECT USER_NAME, DATA_ACCESS_NAME WHERE COLL_NAME = '";
+            ss << _path.parent_path().string() << "' AND DATA_NAME = '" << _path.object_name().string() << "'";
+        }
+        else {
+            ss << "SELECT COLL_USER_NAME, COLL_ACCESS_NAME WHERE COLL_NAME = '";
+            ss << _path.string() << "'";
+        }
+        for (auto&& row : irods::query<rcComm_t>{&conn, ss.str()}) {
+            os << "    " << row.at(0) << "#" << row.at(1);
+        }
+        os << "\n";
+        return os.str();
+    }
     inline auto canonical(const std::string_view _path, const rodsEnv& _env) -> std::optional<std::string>
     {
         rodsPath_t input{};
@@ -108,16 +128,31 @@ namespace irods::cli
                 return 1;
             }
 
-            auto const printfunc = vm.count("L") ? std::bind(&CLI_COMMAND_NAME::print_multi_line_description, this, std::placeholders::_1, std::placeholders::_2)
-                                                 : std::bind(&CLI_COMMAND_NAME::print_one_liner_description, this, std::placeholders::_1, std::placeholders::_2);
+            //default behavior: just print name
+            auto printFuncPtr = &CLI_COMMAND_NAME::print_short_description;
+
+            if(vm.count("L")) {
+                printFuncPtr = &CLI_COMMAND_NAME::print_multi_line_description;
+            }
+            else if(vm.count("l")) {
+                printFuncPtr = &CLI_COMMAND_NAME::print_one_liner_description;
+            }
+            //std::bind lame :(
+            auto const printfunc = std::bind(printFuncPtr, this, std::placeholders::_1, std::placeholders::_2);
             if(vm.count("r")) {
                 for(auto&& e : fs::client::recursive_collection_iterator{conn,logical_path}) {
                     std::invoke(printfunc, conn, e);
+                    if(vm.count("acls")) {
+                        std::cout << getAclString(conn, e);
+                    }
                 }
             }
             else {
                 for(auto&& e : fs::client::collection_iterator{conn,logical_path}) {
                     std::invoke(printfunc, conn, e);
+                    if(vm.count("acls")) {
+                        std::cout << getAclString(conn, e);
+                    }
                 }
             }
 
@@ -125,6 +160,15 @@ namespace irods::cli
         }
 
     private:
+        auto print_short_description(rcComm_t& conn, const fs::client::collection_entry& e) -> void
+        {
+            std::stringstream os;
+            if(!e.is_data_object()) {
+                os << "C- ";
+            }
+            os << e.path().object_name().c_str() << "\n";
+            std::cout << os.str();
+        }
         auto print_one_liner_description(rcComm_t& conn, const fs::client::collection_entry& e) -> void
         {
             auto tm = std::chrono::system_clock::to_time_t(e.last_write_time());
