@@ -32,6 +32,7 @@ namespace irods::cli
 {
     auto getAclString(rcComm_t& conn, const fs::client::collection_entry& ce) -> std::string 
     {
+        bool didUseSpecificQuery = false;
         std::stringstream ss, os;
         os << "        ACL - ";
         auto _path = ce.path();
@@ -40,11 +41,24 @@ namespace irods::cli
             ss << _path.parent_path().string() << "' AND DATA_NAME = '" << _path.object_name().string() << "'";
         }
         else {
-            ss << "SELECT COLL_USER_NAME, COLL_ACCESS_NAME WHERE COLL_NAME = '";
-            ss << _path.string() << "'";
+            try {
+                std::vector<std::string> testArgs;
+                testArgs.push_back(_path.string());
+                for (auto&& row : irods::query<rcComm_t>(&conn, "ShowCollAcls", &testArgs, {}, 0, 0, irods::query<rcComm_t>::SPECIFIC, 0)) {
+                    std::cout << row.at(0) << "|" << row.at(1) << "|" << row.at(2);
+                }
+                didUseSpecificQuery = true;
+            } 
+            catch(const irods::exception& e) {
+                std::cout << "reached exception block\n";
+                ss << "SELECT COLL_USER_NAME, COLL_ACCESS_NAME WHERE COLL_NAME = '";
+                ss << _path.string() << "'";
+            }
         }
-        for (auto&& row : irods::query<rcComm_t>{&conn, ss.str()}) {
-            os << "    " << row.at(0) << "#" << row.at(1);
+        if(!didUseSpecificQuery) {
+            for (auto&& row : irods::query<rcComm_t>{&conn, ss.str()}) {
+                os << "    " << row.at(0) << "#" << row.at(1);
+            }
         }
         os << "\n";
         return os.str();
