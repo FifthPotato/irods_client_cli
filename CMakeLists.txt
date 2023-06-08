@@ -6,8 +6,8 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
 set(IRODS_CLI_REVISION "0")
 set(IRODS_CLI_VERSION "${IRODS_VERSION}.${IRODS_CLI_REVISION}")
-set(irods_static_subcommands ls put get repl touch cp rm pwd cd exit mv tree)
-set(irods_dynamic_subcommands )
+set(irods_static_subcommands)
+set(irods_dynamic_subcommands ls put get repl touch cp rm pwd cd exit mv tree mkdir)
 
 set(CMAKE_C_COMPILER ${IRODS_EXTERNALS_FULLPATH_CLANG}/bin/clang)
 set(CMAKE_CXX_COMPILER ${IRODS_EXTERNALS_FULLPATH_CLANG}/bin/clang++)
@@ -70,6 +70,7 @@ target_include_directories(${APP} PRIVATE ${CMAKE_SOURCE_DIR}/include
 list(TRANSFORM irods_static_subcommands PREPEND irods_cli_ OUTPUT_VARIABLE static_liblist)
 target_link_libraries(${APP} PRIVATE irods_common
                                      irods_plugin_dependencies
+                                     irods_client
                                      ${static_liblist}
                                      ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_filesystem.so
                                      ${IRODS_EXTERNALS_FULLPATH_BOOST}/lib/libboost_system.so

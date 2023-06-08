@@ -2,7 +2,7 @@
 #include <boost/preprocessor/seq.hpp>
 #include <boost/preprocessor/cat.hpp>
 
-
+#ifdef DO_STATIC
 // default values, should be overridden by cmake
 #ifndef IRODS_CLI_SEQ
 #   define IRODS_CLI_SEQ (ls)(put)
@@ -18,3 +18,4 @@
 BOOST_PP_SEQ_FOR_EACH(IRODS_STATIC_CLI, ~, IRODS_CLI_SEQ);
 
 #undef IRODS_STATIC_CLI
+#endif
