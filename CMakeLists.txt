@@ -6,8 +6,8 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
 set(IRODS_CLI_REVISION "0")
 set(IRODS_CLI_VERSION "${IRODS_VERSION}.${IRODS_CLI_REVISION}")
-set(irods_static_subcommands)
-set(irods_dynamic_subcommands ls put get repl touch cp rm pwd cd exit mv tree mkdir)
+set(irods_static_subcommands ls put get repl touch cp rm pwd cd exit mv tree mkdir)
+set(irods_dynamic_subcommands)
 
 set(CMAKE_C_COMPILER ${IRODS_EXTERNALS_FULLPATH_CLANG}/bin/clang)
 set(CMAKE_CXX_COMPILER ${IRODS_EXTERNALS_FULLPATH_CLANG}/bin/clang++)
@@ -66,8 +66,16 @@ target_include_directories(${APP} PRIVATE ${CMAKE_SOURCE_DIR}/include
                                           ${IRODS_EXTERNALS_FULLPATH_CLANG}/include/c++/v1
                                           ${IRODS_EXTERNALS_FULLPATH_FMT}/include)
 
+# perform the following if there is at least one static linked cmd
 
-list(TRANSFORM irods_static_subcommands PREPEND irods_cli_ OUTPUT_VARIABLE static_liblist)
+if(irods_static_subcommands)
+    list(TRANSFORM irods_static_subcommands PREPEND irods_cli_ OUTPUT_VARIABLE static_liblist)
+    list(JOIN irods_static_subcommands ")(" cli_boost_seq)
+    set(cli_boost_seq "(${cli_boost_seq})")
+    target_compile_definitions(${APP} PRIVATE IRODS_CLI_SEQ=${cli_boost_seq})
+    target_compile_definitions(${APP} PRIVATE DO_STATIC)
+endif()
+
 target_link_libraries(${APP} PRIVATE irods_common
                                      irods_plugin_dependencies
                                      irods_client
@@ -78,9 +86,6 @@ target_link_libraries(${APP} PRIVATE irods_common
                                      ${IRODS_EXTERNALS_FULLPATH_FMT}/lib/libfmt.so
                                      dl)
 
-list(JOIN irods_static_subcommands ")(" cli_boost_seq)
-set(cli_boost_seq "(${cli_boost_seq})")
-target_compile_definitions(${APP} PRIVATE IRODS_CLI_SEQ=${cli_boost_seq})
 
 # CLI Commands
 set(do_static TRUE)
