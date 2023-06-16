@@ -103,7 +103,6 @@ irods mv [options] source_fully_qualified_logical_path destination_fully_qualifi
 
             const auto logical_path = canonical(vm["logical_path"].as<std::string>(), env);
             const auto destination = canonical(vm["destination"].as<std::string>(), env);
-
             if(!logical_path.has_value()) {
                 std::cerr << "Invalid source logical path.\n";
                 return 1;
@@ -114,17 +113,11 @@ irods mv [options] source_fully_qualified_logical_path destination_fully_qualifi
                 return 1;
             }
 
-            const auto object_status = fs::client::status(conn, logical_path.value());
-
-            if (!fs::client::is_collection(object_status) && !fs::client::is_data_object(object_status)) {
-                std::cerr << "Error: Logical path does not point to a collection or data object. Do you need a fully qualified path?\n";
-                return 1;
-            }
             fs::client::rename(conn, logical_path.value(), destination.value());
             return 0;
         }
 
-    }; // class cp
+    }; // class mv 
 
 } // namespace irods::cli
 

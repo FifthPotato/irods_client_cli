@@ -45,7 +45,7 @@ namespace irods::cli
                 std::vector<std::string> testArgs;
                 testArgs.push_back(_path.string());
                 for (auto&& row : irods::query<rcComm_t>(&conn, "ShowCollAcls", &testArgs, {}, 0, 0, irods::query<rcComm_t>::SPECIFIC, 0)) {
-                    std::cout << row.at(0) << "|" << row.at(1) << "|" << row.at(2);
+                    os << row.at(0) << "|" << row.at(1) << "|" << row.at(2);
                 }
                 didUseSpecificQuery = true;
             } 
