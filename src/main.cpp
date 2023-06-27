@@ -136,8 +136,7 @@ auto load_cli_command_plugins(const po::variables_map& vm) -> cli_command_map_ty
         lib_dir /= "cli";
     }
     if(vm.count("verbose")) {
-        fmt::print("Loading dynamic cli plugins from {}...\n", lib_dir.string());
-    }
+        fmt::print("Loading dynamic cli plugins from {}...\n", lib_dir.string()); }
     try {
         for (auto&& e : fs::directory_iterator{lib_dir}) {
             if (is_shared_library(e)) {
